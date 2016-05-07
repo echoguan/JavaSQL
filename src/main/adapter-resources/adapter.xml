@@ -24,7 +24,7 @@ limitations under the License.
 
 	<JAXRSApplicationClass>com.sample.JavaSQLApplication</JAXRSApplicationClass>
 
-	<property name="DB_url" displayName="Database URL" defaultValue="jdbc:mysql://127.0.0.1:3306/echo_lesson"  />
+	<property name="DB_url" displayName="Database URL" defaultValue="jdbc:mysql://127.0.0.1:3306/lesson"  />
 	<property name="DB_username" displayName="Database username" defaultValue="root"  />
 	<property name="DB_password" displayName="Database password" defaultValue="echoecho"  />
 </mfp:adapter>

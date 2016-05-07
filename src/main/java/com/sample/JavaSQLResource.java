@@ -53,14 +53,14 @@ public class JavaSQLResource {
 	public JSONArray getAllTeachers() throws SQLException{
 		JSONArray results = new JSONArray();
 		Connection con = getSQLConnection();
-		PreparedStatement getAllUsers = con.prepareStatement("SELECT * FROM echo_lesson.teacher_account");
+		PreparedStatement getAllUsers = con.prepareStatement("SELECT * FROM lesson.student_account");
 		ResultSet data = getAllUsers.executeQuery();
 		
 		while(data.next()){
 			JSONObject item = new JSONObject();
-			item.put("teacher_account_id", data.getString("teacher_account_id"));
-			item.put("teacher_account_name", data.getString("teacher_account_name"));
-			item.put("teacher_account_password", data.getString("teacher_account_password"));
+			item.put("student_id", data.getString("student_id"));
+			item.put("student_name", data.getString("student_name"));
+			item.put("student_password", data.getString("student_password"));
 			results.add(item);
 		}
 
@@ -71,18 +71,18 @@ public class JavaSQLResource {
 	}
 	
 	@GET
-	@Path("/loginConfirm/{teacherName}/{teacherPassword}")
+	@Path("/loginConfirm/{studentName}/{studentPassword}")
 	public String loginConfirm(
-			@PathParam(value="teacherName") String name,
-			@PathParam(value="teacherPassword") String password) throws SQLException{
+			@PathParam(value="studentName") String name,
+			@PathParam(value="studentPassword") String password) throws SQLException{
 		Connection con = getSQLConnection();
-		PreparedStatement loginConfirm = con.prepareStatement("SELECT teacher_account_password FROM echo_lesson.teacher_account WHERE teacher_account_name = ?");
+		PreparedStatement loginConfirm = con.prepareStatement("SELECT student_password FROM lesson.student_account WHERE student_name = ?");
 		
 		try{
 	    	loginConfirm.setString(1, name);
 	    	ResultSet data = loginConfirm.executeQuery();
 	    	if(data.first()){
-	    		String rightPassString = data.getString("teacher_account_password");
+	    		String rightPassString = data.getString("student_password");
 	    		if( password.equals(rightPassString)) {
 	    			return "Success";
 	    		} else {
@@ -97,6 +97,30 @@ public class JavaSQLResource {
 	    	loginConfirm.close();
 	    	con.close();
 	    }
+	}
+	
+	
+	@GET
+	@Path("/getLesson")
+	@Produces("application/json")
+	public JSONArray getAllLesson() throws SQLException{
+		JSONArray results = new JSONArray();
+		Connection con = getSQLConnection();
+		PreparedStatement getAllUsers = con.prepareStatement("SELECT * FROM lesson.lessontable");
+		ResultSet data = getAllUsers.executeQuery();
+		
+		while(data.next()){
+			JSONObject item = new JSONObject();
+			item.put("lessontable_name", data.getString("lessontable_name"));
+			item.put("lessontable_description", data.getString("lessontable_description"));
+			item.put("lessontable_key", data.getString("lessontable_key"));
+			results.add(item);
+		}
+
+		getAllUsers.close();
+		con.close();
+
+		return results;
 	}
 
 }
