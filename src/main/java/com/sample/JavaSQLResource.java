@@ -102,6 +102,32 @@ public class JavaSQLResource {
 	    }
 	}
 	
+	@GET
+	@Path("/registerStudent/{studentName}/{studentPassword}")
+	public Response registerStudent(
+			@PathParam(value="studentName") String name,
+			@PathParam(value="studentPassword") String password) throws SQLException{
+		Connection con = getSQLConnection();
+		PreparedStatement insertStudent = con.prepareStatement("insert into lesson.student_account (student_name,student_password) values (?,?)");
+		
+		try{
+			insertStudent.setString(1, name);
+			insertStudent.setString(2, password);
+			insertStudent.executeUpdate();
+	    	//Return a 200 OK
+	    	return Response.ok().build();
+	    }
+		catch (SQLIntegrityConstraintViolationException violation) {
+	        //Trying to create a user that already exists
+	        return Response.status(Status.CONFLICT).entity(violation.getMessage()).build();
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	insertStudent.close();
+	        con.close();
+	    }
+	}
+	
 	
 	@GET
 	@Path("/getLesson")
