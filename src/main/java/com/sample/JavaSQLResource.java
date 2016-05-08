@@ -20,15 +20,18 @@ import com.ibm.json.java.JSONArray;
 import com.ibm.json.java.JSONObject;
 import com.ibm.mfp.adapter.api.AdaptersAPI;
 import com.ibm.mfp.adapter.api.ConfigurationAPI;
+import com.ibm.mfp.adapter.api.OAuthSecurity;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+
 import java.sql.*;
 
 
 @Path("/API")
+// @OAuthSecurity(enabled=false)
 public class JavaSQLResource {
 	/*
 	 * For more info on JAX-RS see https://jax-rs-spec.java.net/nonav/2.0-rev-a/apidocs/index.html
@@ -111,6 +114,7 @@ public class JavaSQLResource {
 		
 		while(data.next()){
 			JSONObject item = new JSONObject();
+			item.put("id", data.getString("lessontable_id"));
 			item.put("lessontable_name", data.getString("lessontable_name"));
 			item.put("lessontable_description", data.getString("lessontable_description"));
 			item.put("lessontable_key", data.getString("lessontable_key"));
