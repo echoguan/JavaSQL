@@ -31,7 +31,7 @@ import java.sql.*;
 
 
 @Path("/API")
-// @OAuthSecurity(enabled=false)
+//@OAuthSecurity(enabled=false)
 public class JavaSQLResource {
 	/*
 	 * For more info on JAX-RS see https://jax-rs-spec.java.net/nonav/2.0-rev-a/apidocs/index.html
@@ -73,6 +73,13 @@ public class JavaSQLResource {
 		return results;
 	}
 	
+	/**
+	 * 学生登录验证
+	 * @param name 学生用户名
+	 * @param password 学生密码
+	 * @return 登录状态，字符串类型
+	 * @throws SQLException
+	 */
 	@GET
 	@Path("/loginConfirm/{studentName}/{studentPassword}")
 	public String loginConfirm(
@@ -93,6 +100,36 @@ public class JavaSQLResource {
 	    		}
 	    	} else {
 	    		return "NameWrong";
+	    	}
+	    }
+	    finally{
+	    	//Close resources in all cases
+	    	loginConfirm.close();
+	    	con.close();
+	    }
+	}
+	
+	/**
+	 * 得到登录学生的ID，以供之后各项操作使用
+	 * @param name 学生用户名
+	 * @return 学生ID,或-1代表查询失败
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/getStudentID/{studentName}")
+	public int getStudentID(
+			@PathParam(value="studentName") String name) throws SQLException{
+		Connection con = getSQLConnection();
+		PreparedStatement loginConfirm = con.prepareStatement("SELECT student_id FROM lesson.student_account WHERE student_name = ?");
+		
+		try{
+	    	loginConfirm.setString(1, name);
+	    	ResultSet data = loginConfirm.executeQuery();
+	    	if(data.first()){
+	    		int studentID = data.getInt("student_id");
+	    		return studentID;
+	    	} else {
+	    		return -1;
 	    	}
 	    }
 	    finally{
@@ -128,7 +165,11 @@ public class JavaSQLResource {
 	    }
 	}
 	
-	
+	/**
+	 * 查询所有课程
+	 * @return JSON格式的所有课程
+	 * @throws SQLException
+	 */
 	@GET
 	@Path("/getLesson")
 	@Produces("application/json")
@@ -152,5 +193,36 @@ public class JavaSQLResource {
 
 		return results;
 	}
+	
+	/**
+	 * 学生订阅某课程
+	 * @return 订阅结果，字符串类型，有订阅成功、已订阅过、订阅失败。
+	 * @throws SQLException
+	 */
+//	@GET
+//	@Path("/collectLesson/{lessonName}/{studentName}")
+//	public String collectLesson(
+//			@PathParam(value="lessonName") String lessonName,
+//			@PathParam(value="studentName") String studentName) throws SQLException{
+//		Connection con = getSQLConnection();
+//		PreparedStatement insertStudent = con.prepareStatement("insert into lesson.student_account (student_name,student_password) values (?,?)");
+//		
+//		try{
+//			insertStudent.setString(1, lessonName);
+//			insertStudent.setString(2, studentName);
+//			insertStudent.executeUpdate();
+//	    	//Return a 200 OK
+//	    	return Response.ok().build();
+//	    }
+//		catch (SQLIntegrityConstraintViolationException violation) {
+//	        //Trying to create a user that already exists
+//	        return Response.status(Status.CONFLICT).entity(violation.getMessage()).build();
+//	    }
+//	    finally{
+//	        //Close resources in all cases
+//	    	insertStudent.close();
+//	        con.close();
+//	    }
+//	}
 
 }
