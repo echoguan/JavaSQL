@@ -49,30 +49,6 @@ public class JavaSQLResource {
 		return app.dataSource.getConnection();
 	}
 	
-		
-	@GET
-	@Path("/teacherLogin")
-	@Produces("application/json")
-	public JSONArray getAllTeachers() throws SQLException{
-		JSONArray results = new JSONArray();
-		Connection con = getSQLConnection();
-		PreparedStatement getAllUsers = con.prepareStatement("SELECT * FROM lesson.student_account");
-		ResultSet data = getAllUsers.executeQuery();
-		
-		while(data.next()){
-			JSONObject item = new JSONObject();
-			item.put("student_id", data.getString("student_id"));
-			item.put("student_name", data.getString("student_name"));
-			item.put("student_password", data.getString("student_password"));
-			results.add(item);
-		}
-
-		getAllUsers.close();
-		con.close();
-
-		return results;
-	}
-	
 	/**
 	 * 学生登录验证
 	 * @param name 学生用户名
@@ -196,33 +172,68 @@ public class JavaSQLResource {
 	
 	/**
 	 * 学生订阅某课程
-	 * @return 订阅结果，字符串类型，有订阅成功、已订阅过、订阅失败。
+	 * @return 订阅结果
 	 * @throws SQLException
 	 */
-//	@GET
-//	@Path("/collectLesson/{lessonName}/{studentName}")
-//	public String collectLesson(
-//			@PathParam(value="lessonName") String lessonName,
-//			@PathParam(value="studentName") String studentName) throws SQLException{
-//		Connection con = getSQLConnection();
-//		PreparedStatement insertStudent = con.prepareStatement("insert into lesson.student_account (student_name,student_password) values (?,?)");
-//		
-//		try{
-//			insertStudent.setString(1, lessonName);
-//			insertStudent.setString(2, studentName);
-//			insertStudent.executeUpdate();
-//	    	//Return a 200 OK
-//	    	return Response.ok().build();
-//	    }
-//		catch (SQLIntegrityConstraintViolationException violation) {
-//	        //Trying to create a user that already exists
-//	        return Response.status(Status.CONFLICT).entity(violation.getMessage()).build();
-//	    }
-//	    finally{
-//	        //Close resources in all cases
-//	    	insertStudent.close();
-//	        con.close();
-//	    }
-//	}
+	@GET
+	@Path("/collectLesson/{lessonID}/{studentID}")
+	public Response collectLesson(
+			@PathParam(value="lessonID") String lessonID,
+			@PathParam(value="studentID") String studentID) throws SQLException{
+		Connection con = getSQLConnection();
+		PreparedStatement collectLesson = con.prepareStatement("insert into lesson.collect_lesson (collect_lesson_student_id, collect_lesson_lessontable_id) values (?,?)");
+		
+		try{
+			collectLesson.setString(1, studentID);
+			collectLesson.setString(2, lessonID);
+			collectLesson.executeUpdate();
+	    	//Return a 200 OK
+	    	return Response.ok().build();
+	    }
+		catch (SQLIntegrityConstraintViolationException violation) {
+	        //Trying to create a user that already exists
+	        return Response.status(Status.CONFLICT).entity(violation.getMessage()).build();
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	collectLesson.close();
+	        con.close();
+	    }
+	}
+	
+	/**
+	 * 查询学生是否已订阅过某课程
+	 * @return 查询结果
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/isCollect/{lessonID}/{studentID}")
+	public int isCollect(
+			@PathParam(value="lessonID") String lessonID,
+			@PathParam(value="studentID") String studentID) throws SQLException{
+		Connection con = getSQLConnection();
+		PreparedStatement isCollect = con.prepareStatement("SELECT collect_lesson_id FROM lesson.collect_lesson where collect_lesson_student_id=? and collect_lesson_lessontable_id=?");
+		
+		try{
+			isCollect.setString(1, studentID);
+			isCollect.setString(2, lessonID);
+			ResultSet data = isCollect.executeQuery();
+	    	if(data.first()){
+	    		int collect_lesson_id = data.getInt("collect_lesson_id");
+	    		return collect_lesson_id;
+	    	} else {
+	    		return -1;
+	    	}
+	    }
+		catch (SQLIntegrityConstraintViolationException violation) {
+	        //Trying to create a user that already exists
+			return -2;
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	isCollect.close();
+	        con.close();
+	    }
+	}
 
 }
