@@ -152,8 +152,8 @@ public class JavaSQLResource {
 	public JSONArray getAllLesson() throws SQLException{
 		JSONArray results = new JSONArray();
 		Connection con = getSQLConnection();
-		PreparedStatement getAllUsers = con.prepareStatement("SELECT * FROM lesson.lessontable");
-		ResultSet data = getAllUsers.executeQuery();
+		PreparedStatement getAllLesson = con.prepareStatement("SELECT * FROM lesson.lessontable");
+		ResultSet data = getAllLesson.executeQuery();
 		
 		while(data.next()){
 			JSONObject item = new JSONObject();
@@ -164,7 +164,37 @@ public class JavaSQLResource {
 			results.add(item);
 		}
 
-		getAllUsers.close();
+		getAllLesson.close();
+		con.close();
+
+		return results;
+	}
+	
+	/**
+	 * 查询某学生已订阅的所有课程
+	 * @return JSON格式的所有课程
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/getMyCollectLesson/{studentID}")
+	@Produces("application/json")
+	public JSONArray getMyCollectLesson(@PathParam(value="studentID") String studentID) throws SQLException{
+		JSONArray results = new JSONArray();
+		Connection con = getSQLConnection();
+		PreparedStatement getMyCollectLesson = con.prepareStatement("select * from lesson.lessontable where lessontable_id in (select lessontable_id  from lesson.collect_lesson where student_id = ?)");
+		getMyCollectLesson.setString(1, studentID);
+		ResultSet data = getMyCollectLesson.executeQuery();
+		
+		while(data.next()){
+			JSONObject item = new JSONObject();
+			item.put("id", data.getString("lessontable_id"));
+			item.put("lessontable_name", data.getString("lessontable_name"));
+			item.put("lessontable_description", data.getString("lessontable_description"));
+			item.put("lessontable_key", data.getString("lessontable_key"));
+			results.add(item);
+		}
+
+		getMyCollectLesson.close();
 		con.close();
 
 		return results;
@@ -181,7 +211,7 @@ public class JavaSQLResource {
 			@PathParam(value="lessonID") String lessonID,
 			@PathParam(value="studentID") String studentID) throws SQLException{
 		Connection con = getSQLConnection();
-		PreparedStatement collectLesson = con.prepareStatement("insert into lesson.collect_lesson (collect_lesson_student_id, collect_lesson_lessontable_id) values (?,?)");
+		PreparedStatement collectLesson = con.prepareStatement("insert into lesson.collect_lesson (student_id, lessontable_id) values (?,?)");
 		
 		try{
 			collectLesson.setString(1, studentID);
@@ -212,7 +242,7 @@ public class JavaSQLResource {
 			@PathParam(value="lessonID") String lessonID,
 			@PathParam(value="studentID") String studentID) throws SQLException{
 		Connection con = getSQLConnection();
-		PreparedStatement isCollect = con.prepareStatement("SELECT collect_lesson_id FROM lesson.collect_lesson where collect_lesson_student_id=? and collect_lesson_lessontable_id=?");
+		PreparedStatement isCollect = con.prepareStatement("SELECT collect_lesson_id FROM lesson.collect_lesson where student_id=? and lessontable_id=?");
 		
 		try{
 			isCollect.setString(1, studentID);
@@ -234,6 +264,46 @@ public class JavaSQLResource {
 	    	isCollect.close();
 	        con.close();
 	    }
+	}
+	
+	/**
+	 * 取消订阅
+	 * @param lessonID 取消订阅课程编号
+	 * @param studentID 取消订阅学生编号
+	 * @return 取消订阅是否成功
+	 * @throws SQLException
+	 */
+	@DELETE
+	@Path("/deleteCollect/{lessonID}/{studentID}")
+	public Response deleteCollect(
+			@PathParam(value="lessonID") String lessonID,
+			@PathParam(value="studentID") String studentID) throws SQLException{
+	    Connection con = getSQLConnection();
+	    PreparedStatement getCollect = con.prepareStatement("SELECT * FROM lesson.collect_lesson where student_id=? and lessontable_id=?");
+
+	    try{
+	    	getCollect.setString(1, studentID);
+	    	getCollect.setString(2, lessonID);
+	        ResultSet data = getCollect.executeQuery();
+
+	        if(data.first()){
+	            PreparedStatement deleteCollect = con.prepareStatement("DELETE FROM lesson.collect_lesson WHERE student_id = ? and lessontable_id = ?");
+	            deleteCollect.setString(1, studentID);
+	            deleteCollect.setString(2, lessonID);
+	            deleteCollect.executeUpdate();
+	            deleteCollect.close();
+	            return Response.ok().build();
+
+	        } else{
+	            return Response.status(Status.NOT_FOUND).entity("User not found...").build();
+	        }
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	getCollect.close();
+	        con.close();
+	    }
+
 	}
 
 }
