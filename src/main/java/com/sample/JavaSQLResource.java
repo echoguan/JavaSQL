@@ -147,12 +147,12 @@ public class JavaSQLResource {
 	 * @throws SQLException
 	 */
 	@GET
-	@Path("/getLesson")
+	@Path("/getAllLesson")
 	@Produces("application/json")
 	public JSONArray getAllLesson() throws SQLException{
 		JSONArray results = new JSONArray();
 		Connection con = getSQLConnection();
-		PreparedStatement getAllLesson = con.prepareStatement("SELECT * FROM lesson.lessontable");
+		PreparedStatement getAllLesson = con.prepareStatement("select lessontable_id, lessontable_name, lessontable_description, lessontable_key, teacher_name from (select teacher_id,teacher_name from lesson.teacher_account) t , (select * from lesson.lessontable) l where t.teacher_id=l.teacher_id");
 		ResultSet data = getAllLesson.executeQuery();
 		
 		while(data.next()){
@@ -160,6 +160,7 @@ public class JavaSQLResource {
 			item.put("id", data.getString("lessontable_id"));
 			item.put("lessontable_name", data.getString("lessontable_name"));
 			item.put("lessontable_description", data.getString("lessontable_description"));
+			item.put("teacher_name", data.getString("teacher_name"));
 			item.put("lessontable_key", data.getString("lessontable_key"));
 			results.add(item);
 		}
@@ -181,7 +182,7 @@ public class JavaSQLResource {
 	public JSONArray getMyCollectLesson(@PathParam(value="studentID") String studentID) throws SQLException{
 		JSONArray results = new JSONArray();
 		Connection con = getSQLConnection();
-		PreparedStatement getMyCollectLesson = con.prepareStatement("select * from lesson.lessontable where lessontable_id in (select lessontable_id  from lesson.collect_lesson where student_id = ?)");
+		PreparedStatement getMyCollectLesson = con.prepareStatement("select lessontable_id, lessontable_name, lessontable_description, lessontable_key, teacher_name from (select teacher_id,teacher_name from lesson.teacher_account) t , (select * from lesson.lessontable) l where t.teacher_id=l.teacher_id and lessontable_id in (select lessontable_id  from lesson.collect_lesson where student_id = ?)");
 		getMyCollectLesson.setString(1, studentID);
 		ResultSet data = getMyCollectLesson.executeQuery();
 		
@@ -190,6 +191,7 @@ public class JavaSQLResource {
 			item.put("id", data.getString("lessontable_id"));
 			item.put("lessontable_name", data.getString("lessontable_name"));
 			item.put("lessontable_description", data.getString("lessontable_description"));
+			item.put("teacher_name", data.getString("teacher_name"));
 			item.put("lessontable_key", data.getString("lessontable_key"));
 			results.add(item);
 		}
