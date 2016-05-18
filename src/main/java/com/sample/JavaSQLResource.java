@@ -307,5 +307,35 @@ public class JavaSQLResource {
 	    }
 
 	}
+	
+	/**
+	 * 查询某课程的所有公告
+	 * @return JSON格式的所有公告
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/getLessonNotice/{lessonID}")
+	@Produces("application/json")
+	public JSONArray getLessonNotice(@PathParam(value="lessonID") String lessonID) throws SQLException{
+		JSONArray results = new JSONArray();
+		Connection con = getSQLConnection();
+		PreparedStatement getLessonNotice = con.prepareStatement("SELECT * FROM lesson.lesson_notice where lessontable_id = ?");
+		getLessonNotice.setString(1, lessonID);
+		ResultSet data = getLessonNotice.executeQuery();
+		
+		while(data.next()){
+			JSONObject item = new JSONObject();
+			item.put("lesson_notice_id", data.getString("lesson_notice_id"));
+			item.put("lessontable_id", data.getString("lessontable_id"));
+			item.put("lesson_notice_description", data.getString("lesson_notice_description"));
+			item.put("lesson_notice_time", data.getString("lesson_notice_time"));
+			results.add(item);
+		}
+
+		getLessonNotice.close();
+		con.close();
+
+		return results;
+	}
 
 }
