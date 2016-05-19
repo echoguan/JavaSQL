@@ -437,23 +437,21 @@ public class JavaSQLResource {
 		return item;
 	}
 	
-	@POST
-	@Path("/addQuestion/{lessonID}/{studentID}/{questionTitle}/{questionDescription}/{questionTime}")
+	@GET
+	@Path("/addQuestion/{lessonID}/{studentID}/{questionTitle}/{questionDescription}")
 	public Response addQuestion(
 			@PathParam(value="lessonID") String lessonID,
 			@PathParam(value="studentID") String studentID,
 			@PathParam(value="questionTitle") String questionTitle,
-			@PathParam(value="questionDescription") String questionDescription,
-			@PathParam(value="questionTime") String questionTime) throws SQLException{
+			@PathParam(value="questionDescription") String questionDescription) throws SQLException{
 		Connection con = getSQLConnection();
-		PreparedStatement addQuestion = con.prepareStatement("insert into lesson.lesson_question (lessontable_id,student_id,lesson_question_title,lesson_question_description,lesson_question_time) values (?,?,?,?,?)");
+		PreparedStatement addQuestion = con.prepareStatement("insert into lesson.lesson_question (lessontable_id,student_id,lesson_question_title,lesson_question_description) values (?,?,?,?)");
 		
 		try{
 			addQuestion.setString(1, lessonID);
 			addQuestion.setString(2, studentID);
 			addQuestion.setString(3, questionTitle);
 			addQuestion.setString(4, questionDescription);
-			addQuestion.setString(5, questionTime);
 			addQuestion.executeUpdate();
 	    	//Return a 200 OK
 	    	return Response.ok().build();
