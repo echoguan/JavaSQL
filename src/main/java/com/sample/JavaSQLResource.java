@@ -338,4 +338,63 @@ public class JavaSQLResource {
 		return results;
 	}
 
+	
+	/**
+	 * 查询某课程的所有提问
+	 * @return JSON格式的所有提问
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/getLessonQuestion/{lessonID}")
+	@Produces("application/json")
+	public JSONArray getLessonQuestion(@PathParam(value="lessonID") String lessonID) throws SQLException{
+		JSONArray results = new JSONArray();
+		Connection con = getSQLConnection();
+		PreparedStatement getLessonQuestion = con.prepareStatement("select lesson_question_id, lesson_question_title, lesson_question_description, lesson_question_time, student_name from (select student_id,student_name from lesson.student_account) s , (select * from lesson.lesson_question) q where s.student_id=q.student_id and lessontable_id in (select lessontable_id  from lesson.lesson_question where lessontable_id = ?)");
+		getLessonQuestion.setString(1, lessonID);
+		ResultSet data = getLessonQuestion.executeQuery();
+		
+		while(data.next()){
+			JSONObject item = new JSONObject();
+			item.put("lesson_question_id", data.getString("lesson_question_id"));
+			item.put("student_name", data.getString("student_name"));
+			item.put("lesson_question_title", data.getString("lesson_question_title"));
+			item.put("lesson_question_description", data.getString("lesson_question_description"));
+			item.put("lesson_question_time", data.getString("lesson_question_time"));
+			results.add(item);
+		}
+
+		getLessonQuestion.close();
+		con.close();
+
+		return results;
+	}
+	
+	/**
+	 * 查询某一个提问的具体内容
+	 * @return JSON格式的所有提问
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/getOneQuestion/{questionID}")
+	@Produces("application/json")
+	public JSONObject getOneQuestion(@PathParam(value="questionID") String questionID) throws SQLException{
+		JSONObject item = new JSONObject();
+		Connection con = getSQLConnection();
+		PreparedStatement getOneQuestion = con.prepareStatement("select lesson_question_title, lesson_question_description, lesson_question_time, student_name from (select student_id,student_name from lesson.student_account) s , (select * from lesson.lesson_question) q where s.student_id=q.student_id and lesson_question_id in (select lesson_question_id  from lesson.lesson_question where lesson_question_id = ?)");
+		getOneQuestion.setString(1, questionID);
+		ResultSet data = getOneQuestion.executeQuery();
+		
+		while(data.next()){
+			item.put("lesson_question_title", data.getString("lesson_question_title"));
+			item.put("lesson_question_description", data.getString("lesson_question_description"));
+			item.put("lesson_question_time", data.getString("lesson_question_time"));
+			item.put("student_name", data.getString("student_name"));
+		}
+
+		getOneQuestion.close();
+		con.close();
+
+		return item;
+	}
 }
