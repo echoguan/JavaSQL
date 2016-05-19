@@ -115,6 +115,45 @@ public class JavaSQLResource {
 	    }
 	}
 	
+	/**
+	 * 查询学生是否已订阅过某课程
+	 * @return 查询结果
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/isStudentName/{studentName}")
+	public int isStudentName(@PathParam(value="studentName") String studentName) throws SQLException{
+		Connection con = getSQLConnection();
+		PreparedStatement isStudentName = con.prepareStatement("SELECT student_id FROM lesson.student_account where student_name = ?");
+		
+		try{
+			isStudentName.setString(1, studentName);
+			ResultSet data = isStudentName.executeQuery();
+	    	if(data.first()){
+	    		int student_id = data.getInt("student_id");
+	    		return student_id;
+	    	} else {
+	    		return -1;
+	    	}
+	    }
+		catch (SQLIntegrityConstraintViolationException violation) {
+	        //Trying to create a user that already exists
+			return -2;
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	isStudentName.close();
+	        con.close();
+	    }
+	}
+	
+	/**
+	 * 学生注册
+	 * @param name 用户名
+	 * @param password 密码
+	 * @return 注册结果
+	 * @throws SQLException
+	 */
 	@GET
 	@Path("/registerStudent/{studentName}/{studentPassword}")
 	public Response registerStudent(
@@ -396,5 +435,37 @@ public class JavaSQLResource {
 		con.close();
 
 		return item;
+	}
+	
+	@POST
+	@Path("/addQuestion/{lessonID}/{studentID}/{questionTitle}/{questionDescription}/{questionTime}")
+	public Response addQuestion(
+			@PathParam(value="lessonID") String lessonID,
+			@PathParam(value="studentID") String studentID,
+			@PathParam(value="questionTitle") String questionTitle,
+			@PathParam(value="questionDescription") String questionDescription,
+			@PathParam(value="questionTime") String questionTime) throws SQLException{
+		Connection con = getSQLConnection();
+		PreparedStatement addQuestion = con.prepareStatement("insert into lesson.lesson_question (lessontable_id,student_id,lesson_question_title,lesson_question_description,lesson_question_time) values (?,?,?,?,?)");
+		
+		try{
+			addQuestion.setString(1, lessonID);
+			addQuestion.setString(2, studentID);
+			addQuestion.setString(3, questionTitle);
+			addQuestion.setString(4, questionDescription);
+			addQuestion.setString(5, questionTime);
+			addQuestion.executeUpdate();
+	    	//Return a 200 OK
+	    	return Response.ok().build();
+	    }
+		catch (SQLIntegrityConstraintViolationException violation) {
+	        //Trying to create a user that already exists
+	        return Response.status(Status.CONFLICT).entity(violation.getMessage()).build();
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	addQuestion.close();
+	        con.close();
+	    }
 	}
 }
