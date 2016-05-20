@@ -116,7 +116,73 @@ public class JavaSQLResource {
 	}
 	
 	/**
-	 * 查询学生是否已订阅过某课程
+	 * 教师登录验证
+	 * @param name 用户名
+	 * @param password 密码
+	 * @return 登录状态，字符串类型
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/teacherLoginConfirm/{teacherName}/{teacherPassword}")
+	public String teacherLoginConfirm(
+			@PathParam(value="teacherName") String name,
+			@PathParam(value="teacherPassword") String password) throws SQLException{
+		Connection con = getSQLConnection();
+		PreparedStatement loginConfirm = con.prepareStatement("SELECT teacher_password FROM lesson.teacher_account WHERE teacher_name = ?");
+		
+		try{
+	    	loginConfirm.setString(1, name);
+	    	ResultSet data = loginConfirm.executeQuery();
+	    	if(data.first()){
+	    		String rightPassString = data.getString("teacher_password");
+	    		if( password.equals(rightPassString)) {
+	    			return "Success";
+	    		} else {
+	    			return "PasswordWrong";
+	    		}
+	    	} else {
+	    		return "NameWrong";
+	    	}
+	    }
+	    finally{
+	    	//Close resources in all cases
+	    	loginConfirm.close();
+	    	con.close();
+	    }
+	}
+	
+	/**
+	 * 得到登录教师的ID，以供之后各项操作使用
+	 * @param name 用户名
+	 * @return ID,或-1代表查询失败
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/getTeacherID/{teacherName}")
+	public int getTeacherID(
+			@PathParam(value="teacherName") String name) throws SQLException{
+		Connection con = getSQLConnection();
+		PreparedStatement getTeacherID = con.prepareStatement("SELECT teacher_id FROM lesson.teacher_account WHERE teacher_name = ?");
+		
+		try{
+			getTeacherID.setString(1, name);
+	    	ResultSet data = getTeacherID.executeQuery();
+	    	if(data.first()){
+	    		int studentID = data.getInt("teacher_id");
+	    		return studentID;
+	    	} else {
+	    		return -1;
+	    	}
+	    }
+	    finally{
+	    	//Close resources in all cases
+	    	getTeacherID.close();
+	    	con.close();
+	    }
+	}
+	
+	/**
+	 * 查询学生用户名是否存在
 	 * @return 查询结果
 	 * @throws SQLException
 	 */
@@ -181,6 +247,71 @@ public class JavaSQLResource {
 	}
 	
 	/**
+	 * 教师注册
+	 * @param name 用户名
+	 * @param password 密码
+	 * @return 注册结果
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/registerTeacher/{teacherName}/{teacherPassword}")
+	public Response registerTeacher(
+			@PathParam(value="teacherName") String name,
+			@PathParam(value="teacherPassword") String password) throws SQLException{
+		Connection con = getSQLConnection();
+		PreparedStatement insertTeacher = con.prepareStatement("insert into lesson.teacher_account (teacher_name,teacher_password) values (?,?)");
+		
+		try{
+			insertTeacher.setString(1, name);
+			insertTeacher.setString(2, password);
+			insertTeacher.executeUpdate();
+	    	//Return a 200 OK
+	    	return Response.ok().build();
+	    }
+		catch (SQLIntegrityConstraintViolationException violation) {
+	        //Trying to create a user that already exists
+	        return Response.status(Status.CONFLICT).entity(violation.getMessage()).build();
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	insertTeacher.close();
+	        con.close();
+	    }
+	}
+	
+	/**
+	 * 查询教师用户名是否存在
+	 * @return 查询结果
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/isTeacherName/{teacherName}")
+	public int isTeacherName(@PathParam(value="teacherName") String teacherName) throws SQLException{
+		Connection con = getSQLConnection();
+		PreparedStatement isTeacherName = con.prepareStatement("SELECT teacher_id FROM lesson.teacher_account where teacher_name = ?");
+		
+		try{
+			isTeacherName.setString(1, teacherName);
+			ResultSet data = isTeacherName.executeQuery();
+	    	if(data.first()){
+	    		int teacher_id = data.getInt("teacher_id");
+	    		return teacher_id;
+	    	} else {
+	    		return -1;
+	    	}
+	    }
+		catch (SQLIntegrityConstraintViolationException violation) {
+	        //Trying to create a user that already exists
+			return -2;
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	isTeacherName.close();
+	        con.close();
+	    }
+	}
+	
+	/**
 	 * 查询所有课程
 	 * @return JSON格式的所有课程
 	 * @throws SQLException
@@ -236,6 +367,36 @@ public class JavaSQLResource {
 		}
 
 		getMyCollectLesson.close();
+		con.close();
+
+		return results;
+	}
+	
+	/**
+	 * 查询某教师的所有课程
+	 * @return JSON格式的所有课程
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/getTeacherLesson/{teacherID}")
+	@Produces("application/json")
+	public JSONArray getTeacherLesson(@PathParam(value="teacherID") String teacherID) throws SQLException{
+		JSONArray results = new JSONArray();
+		Connection con = getSQLConnection();
+		PreparedStatement getTeacherLesson = con.prepareStatement("SELECT * FROM lesson.lessontable where teacher_id=?");
+		getTeacherLesson.setString(1, teacherID);
+		ResultSet data = getTeacherLesson.executeQuery();
+		
+		while(data.next()){
+			JSONObject item = new JSONObject();
+			item.put("id", data.getString("lessontable_id"));
+			item.put("lessontable_name", data.getString("lessontable_name"));
+			item.put("lessontable_description", data.getString("lessontable_description"));
+			item.put("lessontable_key", data.getString("lessontable_key"));
+			results.add(item);
+		}
+
+		getTeacherLesson.close();
 		con.close();
 
 		return results;
@@ -468,6 +629,15 @@ public class JavaSQLResource {
 		return item;
 	}
 	
+	/**
+	 * 添加提问
+	 * @param lessonID 课程ID
+	 * @param studentID 提问学生ID
+	 * @param questionTitle 问题标题
+	 * @param questionDescription 问题描述
+	 * @return 提问结果
+	 * @throws SQLException
+	 */
 	@GET
 	@Path("/addQuestion/{lessonID}/{studentID}/{questionTitle}/{questionDescription}")
 	public Response addQuestion(
@@ -562,6 +732,12 @@ public class JavaSQLResource {
 	    }
 	}
 	
+	/**
+	 * 删除问题相关的评论
+	 * @param questionID 问题ID
+	 * @return 删除结果
+	 * @throws SQLException
+	 */
 	@DELETE
 	@Path("/deleteQuestionComment/{questionID}")
 	public Response deleteQuestionComment(@PathParam(value="questionID") String questionID) throws SQLException{
