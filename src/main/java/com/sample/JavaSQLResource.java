@@ -410,6 +410,37 @@ public class JavaSQLResource {
 	}
 	
 	/**
+	 * 查询某学生的所有提问
+	 * @return JSON格式的所有提问
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/getStudentQuestion/{studentID}")
+	@Produces("application/json")
+	public JSONArray getStudentQuestion(@PathParam(value="studentID") String studentID) throws SQLException{
+		JSONArray results = new JSONArray();
+		Connection con = getSQLConnection();
+		PreparedStatement getLessonQuestion = con.prepareStatement("select lesson_question_id, lesson_question_title, lesson_question_description, lesson_question_time, lessontable_name from (select lessontable_id,lessontable_name from lesson.lessontable) l , (select * from lesson.lesson_question) q where l.lessontable_id=q.lessontable_id and student_id in (select student_id  from lesson.lesson_question where student_id = ?)");
+		getLessonQuestion.setString(1, studentID);
+		ResultSet data = getLessonQuestion.executeQuery();
+		
+		while(data.next()){
+			JSONObject item = new JSONObject();
+			item.put("lesson_question_id", data.getString("lesson_question_id"));
+			item.put("lessontable_name", data.getString("lessontable_name"));
+			item.put("lesson_question_title", data.getString("lesson_question_title"));
+			item.put("lesson_question_description", data.getString("lesson_question_description"));
+			item.put("lesson_question_time", data.getString("lesson_question_time"));
+			results.add(item);
+		}
+
+		getLessonQuestion.close();
+		con.close();
+
+		return results;
+	}
+	
+	/**
 	 * 查询某一个提问的具体内容
 	 * @return JSON格式的所有提问
 	 * @throws SQLException
@@ -465,5 +496,98 @@ public class JavaSQLResource {
 	    	addQuestion.close();
 	        con.close();
 	    }
+	}
+	
+	/**
+	 * 查询某提问的所有评论
+	 * @return JSON格式的所有评论
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/getQuestionComment/{questionID}")
+	@Produces("application/json")
+	public JSONArray getQuestionComment(@PathParam(value="questionID") String questionID) throws SQLException{
+		JSONArray results = new JSONArray();
+		Connection con = getSQLConnection();
+		PreparedStatement getQuestionComment = con.prepareStatement("select question_comment_id, question_comment_description, question_comment_time, teacher_name from (select teacher_id,teacher_name from lesson.teacher_account) t , (select * from lesson.question_comment) c where t.teacher_id=c.teacher_id and question_comment_id in (select question_comment_id  from lesson.question_comment where lesson_question_id = ?)");
+		getQuestionComment.setString(1, questionID);
+		ResultSet data = getQuestionComment.executeQuery();
+		
+		while(data.next()){
+			JSONObject item = new JSONObject();
+			item.put("question_comment_id", data.getString("question_comment_id"));
+			item.put("question_comment_description", data.getString("question_comment_description"));
+			item.put("question_comment_time", data.getString("question_comment_time"));
+			item.put("teacher_name", data.getString("teacher_name"));
+			results.add(item);
+		}
+
+		getQuestionComment.close();
+		con.close();
+
+		return results;
+	}
+	
+	/**
+	 * 删除提问
+	 * @param questionID 提问编号
+	 * @return 取消订阅是否成功
+	 * @throws SQLException
+	 */
+	@DELETE
+	@Path("/deleteQuestion/{questionID}")
+	public Response deleteQuestion(@PathParam(value="questionID") String questionID) throws SQLException{
+	    Connection con = getSQLConnection();
+	    PreparedStatement selectQuestion = con.prepareStatement("SELECT * FROM lesson.lesson_question where lesson_question_id=?");
+
+	    try{
+	    	selectQuestion.setString(1, questionID);
+	        ResultSet data = selectQuestion.executeQuery();
+
+	        if(data.first()){
+	            PreparedStatement deleteQuestion = con.prepareStatement("DELETE FROM lesson.lesson_question WHERE lesson_question_id=?");
+	            deleteQuestion.setString(1, questionID);
+	            deleteQuestion.executeUpdate();
+	            deleteQuestion.close();
+	            return Response.ok().build();
+
+	        } else{
+	            return Response.status(Status.NOT_FOUND).entity("Question not found...").build();
+	        }
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	selectQuestion.close();
+	        con.close();
+	    }
+	}
+	
+	@DELETE
+	@Path("/deleteQuestionComment/{questionID}")
+	public Response deleteQuestionComment(@PathParam(value="questionID") String questionID) throws SQLException{
+	    Connection con = getSQLConnection();
+	    PreparedStatement getQuestionComment = con.prepareStatement("SELECT * FROM lesson.question_comment where lesson_question_id=?");
+
+	    try{
+	    	getQuestionComment.setString(1, questionID);
+	        ResultSet data = getQuestionComment.executeQuery();
+
+	        if(data.first()){
+	            PreparedStatement deleteQuestionCommen = con.prepareStatement("DELETE FROM lesson.question_comment where lesson_question_id=?");
+	            deleteQuestionCommen.setString(1, questionID);
+	            deleteQuestionCommen.executeUpdate();
+	            deleteQuestionCommen.close();
+	            return Response.ok().build();
+
+	        } else{
+	            return Response.status(Status.NOT_FOUND).entity("Comment not found...").build();
+	        }
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	getQuestionComment.close();
+	        con.close();
+	    }
+
 	}
 }
