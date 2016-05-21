@@ -180,10 +180,11 @@ public class JavaSQLResource {
 	    	con.close();
 	    }
 	}
-	
+
 	/**
 	 * 查询学生用户名是否存在
-	 * @return 查询结果
+	 * @param studentName 学生用户名
+	 * @return 查询结果，大于0说明已存在，小于0不存在
 	 * @throws SQLException
 	 */
 	@GET
@@ -281,7 +282,8 @@ public class JavaSQLResource {
 	
 	/**
 	 * 查询教师用户名是否存在
-	 * @return 查询结果
+	 * @param teacherName 教师用户名
+	 * @return 查询结果，大于0说明已存在，小于0不存在
 	 * @throws SQLException
 	 */
 	@GET
@@ -343,6 +345,7 @@ public class JavaSQLResource {
 	
 	/**
 	 * 查询某学生已订阅的所有课程
+	 * @param studentID 学生ID
 	 * @return JSON格式的所有课程
 	 * @throws SQLException
 	 */
@@ -374,6 +377,7 @@ public class JavaSQLResource {
 	
 	/**
 	 * 查询某教师的所有课程
+	 * @param teacherID 教师ID
 	 * @return JSON格式的所有课程
 	 * @throws SQLException
 	 */
@@ -404,6 +408,8 @@ public class JavaSQLResource {
 	
 	/**
 	 * 学生订阅某课程
+	 * @param lessonID
+	 * @param studentID
 	 * @return 订阅结果
 	 * @throws SQLException
 	 */
@@ -435,6 +441,8 @@ public class JavaSQLResource {
 	
 	/**
 	 * 查询学生是否已订阅过某课程
+	 * @param lessonID
+	 * @param studentID
 	 * @return 查询结果
 	 * @throws SQLException
 	 */
@@ -510,6 +518,7 @@ public class JavaSQLResource {
 	
 	/**
 	 * 查询某课程的所有公告
+	 * @param lessonID
 	 * @return JSON格式的所有公告
 	 * @throws SQLException
 	 */
@@ -541,6 +550,7 @@ public class JavaSQLResource {
 	
 	/**
 	 * 查询某课程的所有提问
+	 * @param lessonID
 	 * @return JSON格式的所有提问
 	 * @throws SQLException
 	 */
@@ -572,6 +582,7 @@ public class JavaSQLResource {
 	
 	/**
 	 * 查询某学生的所有提问
+	 * @param studentID
 	 * @return JSON格式的所有提问
 	 * @throws SQLException
 	 */
@@ -603,6 +614,7 @@ public class JavaSQLResource {
 	
 	/**
 	 * 查询某一个提问的具体内容
+	 * @param questionID
 	 * @return JSON格式的所有提问
 	 * @throws SQLException
 	 */
@@ -630,11 +642,83 @@ public class JavaSQLResource {
 	}
 	
 	/**
+	 * 给问题添加评论
+	 * @param questionID 问题ID
+	 * @param teacherID 教师ID
+	 * @param commentDescription 评论内容
+	 * @return 操作结果
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/addComment/{questionID}/{teacherID}/{commentDescription}")
+	public Response addQuestion(
+			@PathParam(value="questionID") String questionID,
+			@PathParam(value="teacherID") String teacherID,
+			@PathParam(value="commentDescription") String commentDescription) throws SQLException{
+		Connection con = getSQLConnection();
+		PreparedStatement addQuestion = con.prepareStatement("insert into lesson.question_comment (lesson_question_id,teacher_id,question_comment_description) values (?,?,?)");
+		
+		try{
+			addQuestion.setString(1, questionID);
+			addQuestion.setString(2, teacherID);
+			addQuestion.setString(3, commentDescription);
+			addQuestion.executeUpdate();
+	    	//Return a 200 OK
+	    	return Response.ok().build();
+	    }
+		catch (SQLIntegrityConstraintViolationException violation) {
+	        //Trying to create a user that already exists
+	        return Response.status(Status.CONFLICT).entity(violation.getMessage()).build();
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	addQuestion.close();
+	        con.close();
+	    }
+	}
+	
+	/**
+	 * 添加公告
+	 * @param lessonID
+	 * @param teacherID
+	 * @param noticeDescription
+	 * @return 
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/addNotice/{lessonID}/{teacherID}/{noticeDescription}")
+	public Response addNotice(
+			@PathParam(value="lessonID") String lessonID,
+			@PathParam(value="teacherID") String teacherID,
+			@PathParam(value="noticeDescription") String noticeDescription) throws SQLException{
+		Connection con = getSQLConnection();
+		PreparedStatement addNotice = con.prepareStatement("insert into lesson.lesson_notice (lessontable_id,teacher_id,lesson_notice_description) values (?,?,?)");
+		
+		try{
+			addNotice.setString(1, lessonID);
+			addNotice.setString(2, teacherID);
+			addNotice.setString(3, noticeDescription);
+			addNotice.executeUpdate();
+	    	//Return a 200 OK
+	    	return Response.ok().build();
+	    }
+		catch (SQLIntegrityConstraintViolationException violation) {
+	        //Trying to create a user that already exists
+	        return Response.status(Status.CONFLICT).entity(violation.getMessage()).build();
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	addNotice.close();
+	        con.close();
+	    }
+	}
+	
+	/**
 	 * 添加提问
-	 * @param lessonID 课程ID
-	 * @param studentID 提问学生ID
-	 * @param questionTitle 问题标题
-	 * @param questionDescription 问题描述
+	 * @param lessonID
+	 * @param studentID
+	 * @param questionTitle
+	 * @param questionDescription
 	 * @return 提问结果
 	 * @throws SQLException
 	 */
@@ -670,6 +754,7 @@ public class JavaSQLResource {
 	
 	/**
 	 * 查询某提问的所有评论
+	 * @param questionID
 	 * @return JSON格式的所有评论
 	 * @throws SQLException
 	 */
@@ -733,6 +818,40 @@ public class JavaSQLResource {
 	}
 	
 	/**
+	 * 删除课程
+	 * @param lessonID
+	 * @return
+	 * @throws SQLException
+	 */
+	@DELETE
+	@Path("/deleteLesson/{lessonID}")
+	public Response deleteLesson(@PathParam(value="lessonID") String lessonID) throws SQLException{
+	    Connection con = getSQLConnection();
+	    PreparedStatement selectLesson = con.prepareStatement("SELECT * FROM lesson.lessontable where lessontable_id=?");
+
+	    try{
+	    	selectLesson.setString(1, lessonID);
+	        ResultSet data = selectLesson.executeQuery();
+
+	        if(data.first()){
+	            PreparedStatement deleteLesson = con.prepareStatement("DELETE FROM lesson.lessontable WHERE lessontable_id=?");
+	            deleteLesson.setString(1, lessonID);
+	            deleteLesson.executeUpdate();
+	            deleteLesson.close();
+	            return Response.ok().build();
+
+	        } else{
+	            return Response.status(Status.NOT_FOUND).entity("Lesson not found...").build();
+	        }
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	selectLesson.close();
+	        con.close();
+	    }
+	}
+	
+	/**
 	 * 删除问题相关的评论
 	 * @param questionID 问题ID
 	 * @return 删除结果
@@ -765,5 +884,77 @@ public class JavaSQLResource {
 	        con.close();
 	    }
 
+	}
+	
+	/**
+	 * 查找课程名字是否存在
+	 * @param lessonName
+	 * @return
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/isLessonName/{lessonName}")
+	public int isLessonName(@PathParam(value="lessonName") String lessonName) throws SQLException{
+		Connection con = getSQLConnection();
+		PreparedStatement isLessonName = con.prepareStatement("SELECT lessontable_id FROM lesson.lessontable where lessontable_name = ?");
+		
+		try{
+			isLessonName.setString(1, lessonName);
+			ResultSet data = isLessonName.executeQuery();
+	    	if(data.first()){
+	    		int student_id = data.getInt("lessontable_id");
+	    		return student_id;
+	    	} else {
+	    		return -1;
+	    	}
+	    }
+		catch (SQLIntegrityConstraintViolationException violation) {
+	        //Trying to create a user that already exists
+			return -2;
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	isLessonName.close();
+	        con.close();
+	    }
+	}
+	
+	/**
+	 * 添加课程
+	 * @param lessonName
+	 * @param lessonDescription
+	 * @param lessonkey
+	 * @param teacherID
+	 * @return
+	 * @throws SQLException
+	 */
+	@GET
+	@Path("/addLesson/{lessonName}/{lessonDescription}/{lessonkey}/{teacherID}")
+	public Response addLesson(
+			@PathParam(value="lessonName") String lessonName,
+			@PathParam(value="lessonDescription") String lessonDescription,
+			@PathParam(value="lessonkey") String lessonkey,
+			@PathParam(value="teacherID") String teacherID) throws SQLException{
+		Connection con = getSQLConnection();
+		PreparedStatement addLesson = con.prepareStatement("insert into lesson.lessontable (lessontable_name, lessontable_description, lessontable_key, teacher_id) values (?,?,?,?)");
+		
+		try{
+			addLesson.setString(1, lessonName);
+			addLesson.setString(2, lessonDescription);
+			addLesson.setString(3, lessonkey);;
+			addLesson.setString(4, teacherID);
+			addLesson.executeUpdate();
+	    	//Return a 200 OK
+	    	return Response.ok().build();
+	    }
+		catch (SQLIntegrityConstraintViolationException violation) {
+	        //Trying to create a user that already exists
+	        return Response.status(Status.CONFLICT).entity(violation.getMessage()).build();
+	    }
+	    finally{
+	        //Close resources in all cases
+	    	addLesson.close();
+	        con.close();
+	    }
 	}
 }
